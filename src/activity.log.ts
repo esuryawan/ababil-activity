@@ -33,31 +33,32 @@ export const Kind = {
 	FileList: 52,
 }
 
-// function getReqData(req: Request) {
-// 	let body = req.body
+function getMaskedData(req: Request, withHeader: boolean = false) {
+	let body = req.body
 
-// 	if (body.hasOwnProperty('Password') || body.hasOwnProperty('password') || body.hasOwnProperty('pOld') || body.hasOwnProperty('pNew')) {
-// 		body = JSON.parse(JSON.stringify(body));
-// 		if (body.hasOwnProperty('Password'))
-// 			body.Password = "****************"
-// 		if (body.hasOwnProperty('password'))
-// 			body.password = "****************"
-// 		if (body.hasOwnProperty('pOld'))
-// 			body.pOld = "****************"
-// 		if (body.hasOwnProperty('pNew'))
-// 			body.pNew = "****************"
-// 	}
+	if (body.hasOwnProperty('Password') || body.hasOwnProperty('password') || body.hasOwnProperty('pOld') || body.hasOwnProperty('pNew')) {
+		body = JSON.parse(JSON.stringify(body));
+		if (body.hasOwnProperty('Password'))
+			body.Password = "****************"
+		if (body.hasOwnProperty('password'))
+			body.password = "****************"
+		if (body.hasOwnProperty('pOld'))
+			body.pOld = "****************"
+		if (body.hasOwnProperty('pNew'))
+			body.pNew = "****************"
+	}
 
-// 	let data = {
-// 		req: {
-// 			method: req.method,
-// 			url: req.url,
-// 			body: body,
-// 			params: req.params,
-// 		}
-// 	};
-// 	return data
-// }
+	let data = {
+		req: {
+			method: req.method,
+			url: req.url,
+			body: body,
+			params: req.params,
+			headers: (withHeader ? req.headers : undefined)
+		}
+	};
+	return data
+}
 
 export function init(req: any, res: any, next: any) {
 	// console.log("activity.init");
@@ -81,19 +82,33 @@ export function reply(req: any, res: any, code: number, data: any, activity: str
 	// if (req.activityId) {
 	// 	let id = req.activityId
 	// 	let username = req.credential?.Username || data.Username || req.body.username || null
-	// 	let sExtraData = ""
+	// let sExtraData = ""
 
-	// 	if ((code !== 200) && (Object.keys(data).length > 0)) {
-	// 		let reqdata: any = getReqData(req)
-	// 		reqdata.resp = data
-	// 		reqdata.req.headers = req.headers
-	// 		let xd = JSON.stringify(reqdata);
-	// 		xd = xd.replace(/\\/g, "\\\\")
-	// 			.replace(/\$/g, "\\$")
-	// 			.replace(/'/g, "\\'")
-	// 			.replace(/"/g, "\\\"")
-	// 		sExtraData = ", ExtraData='" + xd + "'"
-	// 	}
+	switch (Math.trunc(code / 100)) {
+		case 1: // 1xx informational, no log
+		case 2: // 2xx success, no log
+		case 3: // 3xx redirect, no log
+			break;
+
+		case 4: // 4xx client errors
+			if (Object.keys(data).length > 0) {
+				console.log(data);
+			}
+			break;
+
+		case 5: // 5xx server error
+		default:
+			let logdata: any = getMaskedData(req, true);
+			logdata.resp = data;
+			// let xd = JSON.stringify(reqdata);
+			// xd = xd.replace(/\\/g, "\\\\")
+			// 	.replace(/\$/g, "\\$")
+			// 	.replace(/'/g, "\\'")
+			// 	.replace(/"/g, "\\\"")
+			// sExtraData = ", ExtraData='" + xd + "'"
+			console.log(logdata);
+			break;
+	}
 	// 	db.dbws.query("UPDATE WebAuth_Activity"
 	// 		+ " SET Status=" + code
 	// 		+ ", Severity=" + (severity || 0)
@@ -109,7 +124,7 @@ export function reply(req: any, res: any, code: number, data: any, activity: str
 	// } else {
 	// 	console.log('activity not initiate')
 	// }
-	res.status(code).send(data)
+	res.status(code).send(data);
 }
 
 export function captureRequest(req: Request, res: Response, next: NextFunction) {

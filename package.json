@@ -1,7 +1,7 @@
 {
 	"private": false,
 	"name": "ababil-activity",
-	"version": "1.0.20230624",
+	"version": "1.1.20230818",
 	"type": "module",
 	"main": "build/index.js",
 	"description": "Ababil Activity Logger",
